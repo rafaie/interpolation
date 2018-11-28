@@ -9,6 +9,15 @@ interpolator.py: a class to study different Univariate interpolation¶
 import argparse
 import os
 
+
+class Interpolator:
+    def __init__(self, file, column, verbose):
+        self.file
+
+    def run(self, file=None, column=None, verbose=None):
+        pass
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file",
@@ -22,12 +31,6 @@ if __name__ == "__main__":
                         action='store_true')
 
     args = parser.parse_args()
-    print(args.file, args.column)
-    # max_transitions = args.max_transitions if args.max_transitions else \
-    #     MAX_TRANSITION
-    # init_string = args.init_string
-    # if args.file is True:
-    #     with open(args.init_string, "r") as fi:
-    #         init_string = fi.readlines()[0].strip()
-    # t = Turing(init_string, max_transitions, args.verbose)
-    # t.run()
+
+    i = Interpolator(args.file, args.column, args.verbose)
+    i.run()
