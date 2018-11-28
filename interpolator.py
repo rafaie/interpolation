@@ -10,20 +10,30 @@ import pandas as pd
 import argparse
 import os
 
+CROSS_VARS = [5, 10, 15, 20, 30]
+RETRY_COUNT = 5
+
 
 class Interpolator:
     def __init__(self, verbose=False):
         self.verbose = verbose
 
     def read_data(self, file, column1, column2):
-        data = np.genfromtxt(file, delimiter=',', skip_header=1)
-        data = pd.read_csv(file)
-        return data.iloc[:, [column1, column2]]
+        df = pd.read_csv(file)
+        return df.iloc[:, [column1, column2]]
+
+    def create_dataset(self, df, cross_num):
+        df2 = df.sample(frac=1)
+        dfs = np.split(df2, [cross_num], axis=1)
+        return dfs
 
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
         base_data = self.read_data(file, column1, column2)
         print(base_data[:10])
+        for i in CROSS_VARS[1]:
+            dfs = self.create_dataset(df, i)
+            print(i, dfs[i])
 
 
 if __name__ == "__main__":
