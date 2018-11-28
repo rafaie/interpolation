@@ -29,11 +29,11 @@ class Interpolator:
 
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
-        base_data = self.read_data(file, column1, column2)
-        print(base_data[:10])
-        for i in CROSS_VARS[1]:
+        df = self.read_data(file, column1, column2)
+        print(df[:10])
+        for i in CROSS_VARS[:1]:
             dfs = self.create_dataset(df, i)
-            print(i, dfs[i])
+            print(i, len(dfs), dfs[1])
 
 
 if __name__ == "__main__":
