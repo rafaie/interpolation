@@ -7,6 +7,7 @@ interpolator.py: a class to study different Univariate interpolation¶
 
 import numpy as np
 import pandas as pd
+from datetime import datetime
 import argparse
 import os
 
@@ -20,20 +21,26 @@ class Interpolator:
 
     def read_data(self, file, column1, column2):
         df = pd.read_csv(file)
-        return df.iloc[:, [column1, column2]]
+        # print()
+        df = df.sort_values(list(df)[column1])
+        d1 = datetime.strptime(df.iloc[0, column1], "%Y-%m-%d")
+        df['x'] = [(datetime.strptime(d2, "%Y-%m-%d") - d1).days for d2 in
+                   df.iloc[:, column1]]
+        print(d1)
+        return df.iloc[:, [column1, column2, -1]]
 
     def create_dataset(self, df, cross_num):
         df2 = df.sample(frac=1)
-        dfs = np.split(df2, [cross_num], axis=1)
+        dfs = np.vsplit(df2, cross_num)
         return dfs
 
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
         df = self.read_data(file, column1, column2)
         print(df[:10])
-        for i in CROSS_VARS[:1]:
-            dfs = self.create_dataset(df, i)
-            print(i, len(dfs), dfs[1])
+        # for i in CROSS_VARS[:1]:
+        #     dfs = self.create_dataset(df, i)
+        #     print(i, len(dfs), dfs[1])
 
 
 if __name__ == "__main__":
