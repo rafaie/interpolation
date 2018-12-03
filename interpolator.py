@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime
 import argparse
 import os
+import math
 
 CROSS_VARS = [5, 10, 15, 20, 30]
 RETRY_COUNT = 5
@@ -31,16 +32,21 @@ class Interpolator:
 
     def create_dataset(self, df, cross_num):
         df2 = df.sample(frac=1)
-        dfs = np.vsplit(df2, cross_num)
+        c = df2.shape[0]
+        d = math.floor(c / cross_num)
+        dfs = [df2.iloc[d * (i - 1):d * i - 1, :]
+               for i in range(1, cross_num+1)]
+        dfs[-1] = pd.concat([dfs[-1], df2.iloc[cross_num * d:, :]])
+
         return dfs
 
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
         df = self.read_data(file, column1, column2)
         print(df[:10])
-        # for i in CROSS_VARS[:1]:
-        #     dfs = self.create_dataset(df, i)
-        #     print(i, len(dfs), dfs[1])
+        for i in CROSS_VARS[:1]:
+            dfs = self.create_dataset(df, i)
+            print(i, len(dfs), dfs[1])
 
 
 if __name__ == "__main__":
