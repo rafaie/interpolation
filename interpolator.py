@@ -5,13 +5,16 @@ interpolator.py: a class to study different Univariate interpolation¶
 
 """
 
-import numpy as np
 import pandas as pd
 from datetime import datetime
+from scipy import interpolate
 import argparse
 import os
 import math
+import csv
 
+
+INTERPOLATION_FUNC = [[interpolate.interp1d, "interp1d"]]
 CROSS_VARS = [5, 10, 15, 20, 30]
 RETRY_COUNT = 5
 
@@ -40,13 +43,33 @@ class Interpolator:
 
         return dfs
 
+    def open_csv(self):
+        fname = os.path.join("output",
+                             "result_" +
+                             datetime.now().strftime('%Y%m%d%H%M%S') +
+                             ".csv")
+        with open(fname, 'w') as outfile:
+            outfile_csv = csv.writer(outfile, delimiter=',',
+                                     quotechar="'", quoting=csv.QUOTE_MINIMAL)
+        return outfile_csv
+
+    def create_train_test_dataset(self, dfs, i):
+        pass
+
+    def analysis_result(self, df1, df2):
+        pass
+
+    def run_interpolation(self, dfs, cross_num, in_func, csv_file):
+        pass
+
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
         df = self.read_data(file, column1, column2)
-        print(df[:10])
+        csv_file = self.open_csv()
         for i in CROSS_VARS[:1]:
             dfs = self.create_dataset(df, i)
-            print(i, len(dfs), dfs[1])
+            for in_func in INTERPOLATION_FUNC:
+                self.run_interpolation(dfs, i, in_func, csv_file)
 
 
 if __name__ == "__main__":
