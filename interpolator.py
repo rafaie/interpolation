@@ -6,6 +6,7 @@ interpolator.py: a class to study different Univariate interpolation¶
 """
 
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from scipy import interpolate
 import argparse
@@ -48,10 +49,19 @@ class Interpolator:
                              "result_" +
                              datetime.now().strftime('%Y%m%d%H%M%S') +
                              ".csv")
-        with open(fname, 'w') as outfile:
-            outfile_csv = csv.writer(outfile, delimiter=',',
-                                     quotechar="'", quoting=csv.QUOTE_MINIMAL)
+        self.outfile = open(fname, 'w')
+        outfile_csv = csv.writer(self.outfile, delimiter=',',
+                                 quotechar="'", quoting=csv.QUOTE_MINIMAL)
+        outfile_csv.writerow(['datetime', 'method', 'cross_num',
+                              'runtime', 'retry',
+                              'min_rmse', 'min_min', 'min_max', 'min_std',
+                              'max_rmse', 'max_min', 'max_max', 'max_std',
+                              'mean_rmse', 'mean_min', 'mean_max', 'mean_std',
+                              ])
         return outfile_csv
+
+    def close_csv(self):
+        self.outfile.close()
 
     def create_train_test_dataset(self, dfs, df, i):
         df_train = pd.concat([dfs[ii] for ii in range(len(dfs)) if i != ii])
@@ -73,10 +83,18 @@ class Interpolator:
 
         return (df_train, df_test)
 
-    def analysis_result(self, df1, df2):
-        pass
+    def analysis_result(self, df):
+        df_tmp = (df.iloc[:, 1] - df.iloc[:, 3])
+        rmse = (df_tmp ** 2).mean() ** .5
+        min = df_tmp.abs().min()
+        max = df_tmp.abs().max()
+        std = df_tmp.abs().std()
+
+        return (rmse, min, max, std)
 
     def run_interpolation(self, dfs, df, cross_num, r, in_func, csv_file):
+        analysis = []
+        start_t = datetime.now()
         for i in range(cross_num):
             print('------------')
             print("====>", i)
@@ -85,7 +103,16 @@ class Interpolator:
             # print("=======\n", df_test)
             model = in_func['func'](df_train.iloc[:, 2], df_train.iloc[:, 1])
             df_test['new_x'] = model(df_test.iloc[:, 2])
-            # self.analysis_result(df_test.iloc[:, 1], df_test.iloc[:, 3])
+            analysis.append(self.analysis_result(df_test))
+
+        end_t = datetime.now()
+        analysis = np.array(analysis)
+        min = np.min(analysis, axis=0)
+        max = np.max(analysis, axis=0)
+        mean = np.mean(analysis, axis=0)
+        csv_file.writerow([start_t, in_func['name'], cross_num,
+                          (end_t - start_t).microseconds, r] +
+                          list(min) + list(max) + list(mean))
 
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
@@ -96,6 +123,7 @@ class Interpolator:
                 dfs = self.create_dataset(df, i)
                 for in_func in INTERPOLATION_FUNC:
                     self.run_interpolation(dfs, df, i, r, in_func, csv_file)
+        self.close_csv()
 
 
 if __name__ == "__main__":
