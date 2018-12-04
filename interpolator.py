@@ -14,9 +14,9 @@ import math
 import csv
 
 
-INTERPOLATION_FUNC = [[interpolate.interp1d, "interp1d"]]
+INTERPOLATION_FUNC = [{'func': interpolate.interp1d, 'name': "interp1d"}]
 CROSS_VARS = [5, 10, 15, 20, 30]
-RETRY_COUNT = 5
+RETRY_COUNT = 1
 
 
 class Interpolator:
@@ -53,23 +53,49 @@ class Interpolator:
                                      quotechar="'", quoting=csv.QUOTE_MINIMAL)
         return outfile_csv
 
-    def create_train_test_dataset(self, dfs, i):
-        pass
+    def create_train_test_dataset(self, dfs, df, i):
+        df_train = pd.concat([dfs[ii] for ii in range(len(dfs)) if i != ii])
+        df_train = df_train.sort_values(list(df_train)[2])
+
+        df_test = dfs[i]
+        df_test = df_test.sort_values(list(df_train)[2])
+
+        # Add start and end range to df_train and remove from df_test
+        if df_train.iloc[0, 2] != 0:
+            df_train = pd.concat([df_test.iloc[0:1, :], df_train])
+            df_test = df_test.iloc[1:, :]
+            print('CASE1')
+
+        if df_train.iloc[-1, 2] != df.iloc[-1, 2]:
+            df_train = pd.concat([df_train, df_test.iloc[-1:, :]])
+            df_test = df_test.iloc[:-1, :]
+            print('CASE2')
+
+        return (df_train, df_test)
 
     def analysis_result(self, df1, df2):
         pass
 
-    def run_interpolation(self, dfs, cross_num, in_func, csv_file):
-        pass
+    def run_interpolation(self, dfs, df, cross_num, r, in_func, csv_file):
+        for i in range(cross_num):
+            print('------------')
+            print("====>", i)
+            df_train, df_test = self.create_train_test_dataset(dfs, df, i)
+            # print("=======\n", df_train)
+            # print("=======\n", df_test)
+            model = in_func['func'](df_train.iloc[:, 2], df_train.iloc[:, 1])
+            df_test['new_x'] = model(df_test.iloc[:, 2])
+            # self.analysis_result(df_test.iloc[:, 1], df_test.iloc[:, 3])
 
     def run(self, file, column1, column2, verbose=None):
         verbose = self.verbose if verbose is None else verbose
         df = self.read_data(file, column1, column2)
         csv_file = self.open_csv()
         for i in CROSS_VARS[:1]:
-            dfs = self.create_dataset(df, i)
-            for in_func in INTERPOLATION_FUNC:
-                self.run_interpolation(dfs, i, in_func, csv_file)
+            for r in range(RETRY_COUNT):
+                dfs = self.create_dataset(df, i)
+                for in_func in INTERPOLATION_FUNC:
+                    self.run_interpolation(dfs, df, i, r, in_func, csv_file)
 
 
 if __name__ == "__main__":
