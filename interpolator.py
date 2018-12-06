@@ -15,9 +15,47 @@ import math
 import csv
 
 
-INTERPOLATION_FUNC = [{'func': interpolate.interp1d, 'name': "interp1d"}]
+
+def interpolate_linear(x, y):
+    return interpolate.interp1d(x, y, kind='linear')
+
+def interpolate_next(x, y):
+    return interpolate.interp1d(x, y, kind='next')
+
+def interpolate_previous(x, y):
+    return interpolate.interp1d(x, y, kind='previous')
+
+def interpolate_slinear(x, y):
+    return interpolate.interp1d(x, y, kind='slinear')
+
+def interpolate_nearest(x, y):
+    return interpolate.interp1d(x, y, kind='nearest')
+
+def interpolate_quadratic(x, y):
+    return interpolate.interp1d(x, y, kind='quadratic')
+
+def interpolate_cubic(x, y):
+    return interpolate.interp1d(x, y, kind='cubic')
+
+def interpolate_lagrange(x, y):
+    return interpolate.lagrange(x.values, y.values)
+
+INTERPOLATION_FUNC = [
+                      # {'func': interpolate_lagrange, 'name': "Lagrange"},
+                      {'func': interpolate_linear,   'name': "Linear"},
+                      {'func': interpolate_previous,  'name': "Previous"},
+                      {'func': interpolate_next,  'name': "Next"},
+                      {'func': interpolate_nearest,  'name': "Nearest"},
+                      {'func': interpolate_quadratic,
+                       'name': "Quadratic Spline"},
+                      {'func': interpolate_cubic,    'name': "Cubic Spline"},
+                      {'func': interpolate_slinear,   'name': "Linear Spline"},
+                      # {'func': interpolate.LinearNDInterpolator,
+                      #  'name': "Piecewise linear"},
+
+                      ]
 CROSS_VARS = [5, 10, 15, 20, 30]
-RETRY_COUNT = 1
+RETRY_COUNT = 10
 
 
 class Interpolator:
@@ -26,7 +64,6 @@ class Interpolator:
 
     def read_data(self, file, column1, column2):
         df = pd.read_csv(file)
-        # print()
         df = df.sort_values(list(df)[column1])
         d1 = datetime.strptime(df.iloc[0, column1], "%Y-%m-%d")
         df['x'] = [(datetime.strptime(d2, "%Y-%m-%d") - d1).days for d2 in
@@ -74,12 +111,12 @@ class Interpolator:
         if df_train.iloc[0, 2] != 0:
             df_train = pd.concat([df_test.iloc[0:1, :], df_train])
             df_test = df_test.iloc[1:, :]
-            print('CASE1')
+            # print('CASE1')
 
         if df_train.iloc[-1, 2] != df.iloc[-1, 2]:
             df_train = pd.concat([df_train, df_test.iloc[-1:, :]])
             df_test = df_test.iloc[:-1, :]
-            print('CASE2')
+            # print('CASE2')
 
         return (df_train, df_test)
 
@@ -96,11 +133,8 @@ class Interpolator:
         analysis = []
         start_t = datetime.now()
         for i in range(cross_num):
-            print('------------')
-            print("====>", i)
+            print('==>', in_func['name'], ',', r, ',', cross_num, ',', i)
             df_train, df_test = self.create_train_test_dataset(dfs, df, i)
-            # print("=======\n", df_train)
-            # print("=======\n", df_test)
             model = in_func['func'](df_train.iloc[:, 2], df_train.iloc[:, 1])
             df_test['new_x'] = model(df_test.iloc[:, 2])
             analysis.append(self.analysis_result(df_test))
@@ -118,7 +152,7 @@ class Interpolator:
         verbose = self.verbose if verbose is None else verbose
         df = self.read_data(file, column1, column2)
         csv_file = self.open_csv()
-        for i in CROSS_VARS[:1]:
+        for i in CROSS_VARS:
             for r in range(RETRY_COUNT):
                 dfs = self.create_dataset(df, i)
                 for in_func in INTERPOLATION_FUNC:
