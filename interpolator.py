@@ -54,7 +54,7 @@ INTERPOLATION_FUNC = [
                       #  'name': "Piecewise linear"},
 
                       ]
-CROSS_VARS = [5, 10, 15, 20, 30]
+CROSS_VARS = [5, 10, 20, 40, 60, 100]
 RETRY_COUNT = 10
 
 

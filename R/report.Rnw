@@ -1,0 +1,110 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{lipsum} % for dummy text
+\usepackage[table,dvipsnames]{xcolor}   % Provides coloring for tables and text
+\usepackage{ltablex}                    % Customized table formatting (uses tabularx and longtable)
+\usepackage{environ}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{rotating}
+\usepackage{pdflscape}
+\usepackage{geometry}
+\geometry{legalpaper, margin=0.85in}
+
+\begin{document}
+
+<<echo=F, message=FALSE, warning=FALSE>>=
+
+# Load libs
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(xtable)
+library(lubridate)
+library(stringr)
+library(scales)
+
+data_path = file.path('..', 'data', 'AAPL.csv')
+result_path = file.path('..', 'output', 'result_20181206124425.csv')
+@
+
+
+<<echo=FALSE, message=FALSE, warning=FALSE, fig.height=5, fig.width=8 >>=
+data <- fread(data_path)
+data$date2 <- as.Date(data$Date)
+
+ggplot(data, aes(date2, Close)) + 
+  geom_line() + 
+  scale_x_date(breaks = date_breaks("1 year"),
+  labels = date_format("%Y")) +
+  theme_light() + xlab("Date") + ylab("Close price($)")
+
+@
+
+<<echo=FALSE, message=FALSE, warning=FALSE, fig.height=5, fig.width=8 >>=
+result <- fread(result_path)
+ggplot(result, aes(method, mean_rmse)) + 
+  geom_boxplot() + facet_grid(~cross_num) +
+  theme_light() + xlab("Methods") + ylab("Mean of RMSE for every cross-validationr") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                          legend.text=element_text(size=6)) 
+
+
+ggplot(result, aes(method, mean_std)) + 
+  geom_boxplot() + facet_grid(~cross_num) +
+  theme_light() + xlab("Methods") + ylab("Mean of Standard Deviation for every cross-validation") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                          legend.text=element_text(size=6)) 
+
+
+ggplot(result, aes(method, mean_min)) + 
+  geom_boxplot() + facet_grid(~cross_num) +
+  theme_light() + xlab("Methods") + ylab("Mean of Min Error for every cross-validation") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                          legend.text=element_text(size=6)) 
+
+
+ggplot(result, aes(method, mean_max)) + 
+  geom_boxplot() + facet_grid(~cross_num) +
+  theme_light() + xlab("Methods") + ylab("Mean of Maximum Error for every cross-validation") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                          legend.text=element_text(size=6)) 
+
+
+ggplot(result, aes(method, runtime/1000)) + 
+  geom_boxplot() + facet_grid(~cross_num) +
+  theme_light() + xlab("Methods") + ylab("Runtime for every cross-validation(ms)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                          legend.text=element_text(size=6)) 
+
+
+result_r <- result %>% 
+            group_by(method, cross_num) %>% 
+            summarise(mean_rmse =mean(mean_rmse),
+                      mean_std =mean(mean_std),
+                      mean_min =mean(mean_min),
+                      mean_max =mean(mean_max),
+                      mean_runtimee =mean(runtime/1000),
+                      sum_runtime =sum(runtime/1000))
+
+result_r2 <- result %>% 
+            group_by(method) %>% 
+            summarise(mean_rmse =mean(mean_rmse),
+                      mean_std =mean(mean_std),
+                      mean_min =mean(mean_min),
+                      mean_max =mean(mean_max),
+                      mean_runtimee =mean(runtime/1000),
+                      sum_runtime =sum(runtime/1000))
+
+@
+
+
+<<echo=F, results ='asis', message=FALSE, warning=FALSE>>=
+xtable(result_r[, -c(6,7)])
+xtable(result_r[, c(1,6,7)])
+xtable(result_r2[, -c(6,7)])
+xtable(result_r2[, c(1,6,7)])
+@
+\end{document}
